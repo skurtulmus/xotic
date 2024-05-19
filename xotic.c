@@ -199,6 +199,21 @@ int weak_engine(int turn, char *board) {
 }
 
 int terrible_engine(int turn, char board[][BOARD_SIZE]) {
+    int remaining_turns = BOARD_SIZE*BOARD_SIZE - turn;
+    int available_moves[remaining_turns];
+    int move_index = 0;
+    for (int i = 0; i<BOARD_SIZE; i++) {
+        for (int j = 0; j<BOARD_SIZE; j++) {
+            if (board[i][j] == EMPTY_MARK) {
+                int possible_move = i * BOARD_SIZE + j + 1;
+                available_moves[move_index] = possible_move;
+                move_index++;
+            }
+        }
+    }
+    int chosen_index = rand() % (remaining_turns + 1);
+    int move = available_moves[chosen_index];
+    return move;
 }
 
 int make_move(int move, char mark, char board[][BOARD_SIZE]) {
