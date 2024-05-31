@@ -23,7 +23,7 @@
 #define X_MARK 'X'
 #define O_MARK 'O'
 
-struct timespec WaitTime = {1, 0};
+struct timespec Sleeptime = {1, 0};
 int *game_setting();
 int strong_engine();
 int weak_engine();
@@ -184,7 +184,7 @@ int player_input(int player) {
 
 void wait_engine() {
 	printf("\nThinking...\n");
-	nanosleep(&WaitTime, NULL);
+	nanosleep(&Sleeptime, NULL);
 }
 
 int strong_engine(int turn, char *board) {
