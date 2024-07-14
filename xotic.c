@@ -15,25 +15,28 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
+#include <string.h>
 #include <stdbool.h>
 
 #define BOARD_SIZE 3
 #define EMPTY_MARK ' '
 #define X_MARK 'X'
 #define O_MARK 'O'
+#define MAX 99
+#define MIN -99
 
 struct timespec Sleeptime = {1, 0};
 int *game_setting();
-int strong_engine();
-int weak_engine();
-int terrible_engine();
+int strong_engine(int turn, char board[][BOARD_SIZE]);
+int normal_engine(int turn, char board[][BOARD_SIZE]);
+int random_engine(int turn, char board[][BOARD_SIZE]);
+int minimax_algorithm(int turn, char board[][BOARD_SIZE]);
 int player_input(int player);
 int make_move(int move, char mark, char board[][BOARD_SIZE]);
 int check_result(char board[][BOARD_SIZE]);
 int check_win(char board[][BOARD_SIZE]);
 bool check_tie(char board[][BOARD_SIZE]);
-void wait_engine();
+void computer_think();
 void clear_buffer();
 void clear_console();
 void draw_board(char board[][BOARD_SIZE]);
@@ -88,9 +91,9 @@ int *game_setting() {
 		} else {
 			while (true) {
 				printf("Please choose an engine to play against. (1-3)\n");
-				printf("1 - Strong engine (undefeatable)\n");
-				printf("2 - Weak engine (defeatable)\n");
-				printf("3 - Terrible engine (random moves)\n");
+				printf("1 - Strong engine (cannot be defeated)\n");
+				printf("2 - Normal engine (can be defeated)\n");
+				printf("3 - Random engine (makes random moves)\n");
 				printf("Your choice: ");
 				char engine_choice = getchar();
 				int engine = engine_choice - '0';
@@ -140,12 +143,12 @@ void clear_console() {
 void play_turn(int turn, int players[], char board[][BOARD_SIZE]) {
 	int move;
 	int player = turn % 2;
-	char mark;
-	if (player == 0) {
-		mark = X_MARK;
-	} else {
-		mark = O_MARK;
-	}
+	char mark = (player == 0) ? X_MARK : O_MARK;
+	//if (player == 0) {
+	//	mark = X_MARK;
+	//} else {
+	//	mark = O_MARK;
+	//}
 	if (players[player] == 0) {
 		while (true) {
 			move = player_input(player);
@@ -154,13 +157,13 @@ void play_turn(int turn, int players[], char board[][BOARD_SIZE]) {
 			}
 		}
 	} else {
-		wait_engine();
+		computer_think();
 		if (players[player] == 1) {
 			move = strong_engine(turn, board);
 		} else if (players[player] == 2) {
-			move = weak_engine(turn, board);
+			move = normal_engine(turn, board);
 		} else if (players[player] == 3) {
-			move = terrible_engine(turn, board);
+			move = random_engine(turn, board);
 		}
 		make_move(move, mark, board);
 	}
@@ -176,37 +179,81 @@ int player_input(int player) {
 	}
 	printf("\nPlayer '%c' - Your move: ", player_name);
 	char input = getchar();
-	printf("%c", input);
 	int move = input - '0';
 	clear_buffer();
 	return move;
 }
 
-void wait_engine() {
+void computer_think() {
 	printf("\nThinking...\n");
 	nanosleep(&Sleeptime, NULL);
 }
 
-int strong_engine(int turn, char *board) {
-	//int depth = BOARD_SIZE*BOARD_SIZE - turn;
-	//int bestMove;
-	//int bestValue = -999;
-	//char analysisBoard[BOARD_SIZE][BOARD_SIZE];
-	//memcpy(analysisBoard, board, BOARD_SIZE*BOARD_SIZE*sizeof(char));
+int strong_engine(int turn, char board[][BOARD_SIZE]) {
+	int move = 0;
+	int player = turn % 2;
+	int optimal_value = (player == 0) ? MIN : MAX;
+	char mark = (player == 0) ? X_MARK : O_MARK;
+	for (int i = 0; i < BOARD_SIZE; i++) {
+		for (int j = 0; j < BOARD_SIZE; j++) {
+			char analysis_board[BOARD_SIZE][BOARD_SIZE];
+			memcpy(analysis_board, board, BOARD_SIZE*BOARD_SIZE*sizeof(char));
+			if (analysis_board[i][j] == EMPTY_MARK) {
+				analysis_board[i][j] = mark;
+				int testing_value = minimax_algorithm(turn + 1, analysis_board);
+				if (player == 0 && testing_value > optimal_value) {
+					optimal_value = testing_value;
+					move = i * BOARD_SIZE + j + 1;
+				}
+				if (player == 1 && testing_value < optimal_value) {
+					optimal_value = testing_value;
+					move = i * BOARD_SIZE + j + 1;
+				}
+			}
+		}
+	}
+	return move;
 }
 
-int weak_engine(int turn, char *board) {
+int normal_engine(int turn, char board[][BOARD_SIZE]) {
+	int move;
+	int player = turn % 2;
+	char mark = (player == 0) ? X_MARK : O_MARK;
+	char invert_mark = (mark == X_MARK) ? O_MARK : X_MARK;
+	for (int i = 0; i < BOARD_SIZE; i++) {
+		for (int j = 0; j < BOARD_SIZE; j++) {
+			char analysis_board[BOARD_SIZE][BOARD_SIZE];
+			memcpy(analysis_board, board, BOARD_SIZE*BOARD_SIZE*sizeof(char));
+			int win = 0;
+			if (analysis_board[i][j] == EMPTY_MARK) {
+				analysis_board[i][j] = mark;
+				win = abs(check_win(analysis_board));
+				if (win == 2) {
+					move = i * BOARD_SIZE + j + 1;
+					return move;
+				}
+				analysis_board[i][j] = invert_mark;
+				win = abs(check_win(analysis_board));
+				if (win == 2) {
+					move = i * BOARD_SIZE + j + 1;
+					return move;
+				}
+			}
+		}
+	}
+	move = random_engine(turn, board);
+	return move;
 }
 
-int terrible_engine(int turn, char board[][BOARD_SIZE]) {
+int random_engine(int turn, char board[][BOARD_SIZE]) {
 	int remaining_turns = BOARD_SIZE*BOARD_SIZE - turn;
 	int available_moves[remaining_turns];
 	int move_index = 0;
 	for (int i = 0; i<BOARD_SIZE; i++) {
 		for (int j = 0; j<BOARD_SIZE; j++) {
 			if (board[i][j] == EMPTY_MARK) {
-				int possible_move = i * BOARD_SIZE + j + 1;
-				available_moves[move_index] = possible_move;
+				int candidate_move = i * BOARD_SIZE + j + 1;
+				available_moves[move_index] = candidate_move;
 				move_index++;
 			}
 		}
@@ -214,6 +261,36 @@ int terrible_engine(int turn, char board[][BOARD_SIZE]) {
 	int chosen_index = rand() % (remaining_turns);
 	int move = available_moves[chosen_index];
 	return move;
+}
+
+int minimax_algorithm(int turn, char board[][BOARD_SIZE]) {
+	int player = turn % 2;
+	int depth = BOARD_SIZE*BOARD_SIZE - turn;
+	int result = check_result(board);
+	if (result == 2) {
+		return depth;
+	} else if (result == -2) {
+		return -depth;
+	} else if (result == 1) {
+		return 0;
+	}
+	char mark = (player == 0) ? X_MARK : O_MARK;
+	int optimal_value = (player == 0) ? MIN : MAX;
+	for (int i = 0; i < BOARD_SIZE; i++) {
+		for (int j = 0; j < BOARD_SIZE; j++) {
+			if (board[i][j] == EMPTY_MARK) {
+				board[i][j] = mark;
+				int testing_value = minimax_algorithm(turn + 1, board);
+				if (player == 0 && testing_value > optimal_value) {
+					optimal_value = testing_value;
+				} else if (player == 1 && testing_value < optimal_value) {
+					optimal_value = testing_value;
+				}
+				board[i][j] = EMPTY_MARK;
+			}
+		}
+	}
+	return optimal_value;
 }
 
 int make_move(int move, char mark, char board[][BOARD_SIZE]) {
@@ -235,9 +312,9 @@ int make_move(int move, char mark, char board[][BOARD_SIZE]) {
 }
 
 int check_result(char board[][BOARD_SIZE]) {
-	int isDecisive = check_win(board);
-	if (isDecisive != 0) {
-		return isDecisive;
+	int is_decisive = check_win(board);
+	if (is_decisive != 0) {
+		return is_decisive;
 	}
 	else {
 		bool isDrawn = check_tie(board);
@@ -293,21 +370,21 @@ bool check_tie(char board[][BOARD_SIZE]) {
 
 void draw_board(char board[][BOARD_SIZE]) {
 	clear_console();
-	printf("\n1        |2        |3        \n");
-	printf("         |         |         \n");
-	printf("    %c    |    %c    |    %c    \n", board[0][0], board[0][1], board[0][2]);
-	printf("         |         |         \n");
-	printf("_________|_________|_________\n");
-
-	printf("4        |5        |6        \n");
-	printf("         |         |         \n");
-	printf("    %c    |    %c    |    %c    \n", board[1][0], board[1][1], board[1][2]);
-	printf("         |         |         \n");
-	printf("_________|_________|_________\n");
-
-	printf("7        |8        |9        \n");
-	printf("         |         |         \n");
-	printf("    %c    |    %c    |    %c    \n", board[2][0], board[2][1], board[2][2]);
-	printf("         |         |         \n");
-	printf("         |         |         \n");
+	printf("\n  ______________________________\n");
+	printf(" /_____________________________/|\n");
+	printf(" |1        |2        |3        ||\n");
+	printf(" |         |         |         ||\n");
+	printf(" |    %c    |    %c    |    %c    ||\n", board[0][0], board[0][1], board[0][2]);
+	printf(" |         |         |         ||\n");
+	printf(" |_________|_________|_________||\n");
+	printf(" |4        |5        |6        ||\n");
+	printf(" |         |         |         ||\n");
+	printf(" |    %c    |    %c    |    %c    ||\n", board[1][0], board[1][1], board[1][2]);
+	printf(" |         |         |         ||\n");
+	printf(" |_________|_________|_________||\n");
+	printf(" |7        |8        |9        ||\n");
+	printf(" |         |         |         ||\n");
+	printf(" |    %c    |    %c    |    %c    ||\n", board[2][0], board[2][1], board[2][2]);
+	printf(" |         |         |         ||\n");
+	printf(" |_________|_________|_________|/\n");
 }
