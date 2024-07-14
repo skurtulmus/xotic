@@ -144,11 +144,6 @@ void play_turn(int turn, int players[], char board[][BOARD_SIZE]) {
 	int move;
 	int player = turn % 2;
 	char mark = (player == 0) ? X_MARK : O_MARK;
-	//if (player == 0) {
-	//	mark = X_MARK;
-	//} else {
-	//	mark = O_MARK;
-	//}
 	if (players[player] == 0) {
 		while (true) {
 			move = player_input(player);
@@ -265,7 +260,7 @@ int random_engine(int turn, char board[][BOARD_SIZE]) {
 
 int minimax_algorithm(int turn, char board[][BOARD_SIZE]) {
 	int player = turn % 2;
-	int depth = BOARD_SIZE*BOARD_SIZE - turn;
+	int depth = BOARD_SIZE*BOARD_SIZE - turn + 1;
 	int result = check_result(board);
 	if (result == 2) {
 		return depth;
