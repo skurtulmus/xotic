@@ -46,6 +46,7 @@ int main () {
 	clear_console();
 	printf("\nWelcome to TicTacToe!\n\n");
 	int turn = 0;
+	srand(time(NULL));
 	char board[BOARD_SIZE][BOARD_SIZE] = {
 		EMPTY_MARK, EMPTY_MARK, EMPTY_MARK,
 		EMPTY_MARK, EMPTY_MARK, EMPTY_MARK,
@@ -307,13 +308,13 @@ int make_move(int move, char mark, char board[][BOARD_SIZE]) {
 }
 
 int check_result(char board[][BOARD_SIZE]) {
-	int is_decisive = check_win(board);
-	if (is_decisive != 0) {
-		return is_decisive;
+	int decisive = check_win(board);
+	if (decisive != 0) {
+		return decisive;
 	}
 	else {
-		bool isDrawn = check_tie(board);
-		if (isDrawn == true) {
+		bool drawn = check_tie(board);
+		if (drawn == true) {
 			return 1;
 		}
 	}
